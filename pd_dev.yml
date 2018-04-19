@@ -1,7 +1,7 @@
 podium:
-  user:    "je70"
-  pw:      "G1thub10"
-  url:     "http://159.208.199.237:9080/podium"
+  user:    "youruser"
+  pw:      "yourpwd"
+  url:     "http://yoururl:9080/podium"
 
 default:
   max_jobs: 4
@@ -10,4 +10,4 @@ default:
   engine: "TEZ"
 
 hive:
-  connect: "jdbc:hive2://hdpmtr001.ca.sunlife:10000/default;principal=hive/_HOST@TDHDPDEV1.SUNLIFECORP.COM"
+  connect: "jdbc:hive2://yourhive:10000/default;principal=hive/yourhiveprincipal"
