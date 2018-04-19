@@ -1,0 +1,13 @@
+podium:
+  user:    "je70"
+  pw:      "G1thub10"
+  url:     "http://159.208.199.237:9080/podium"
+
+default:
+  max_jobs: 4
+  refresh_interval: 10
+  log_file: "pd.log"
+  engine: "TEZ"
+
+hive:
+  connect: "jdbc:hive2://hdpmtr001.ca.sunlife:10000/default;principal=hive/_HOST@TDHDPDEV1.SUNLIFECORP.COM"
