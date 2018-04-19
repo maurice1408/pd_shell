@@ -233,7 +233,7 @@ NOTE: Import is still in test.
 
 Podium keeps every version of data for a data load or workflow execution.
 
-This can lead to a rapi consumption of space in the Hadoop file system.
+This can lead to a rapid consumption of space in the Hadoop file system.
 
 `pd_shell` through the use of the -k option will trim the number of versions being retained.
 
@@ -243,7 +243,7 @@ This can lead to a rapi consumption of space in the Hadoop file system.
 ./pd_shell.sh -y pd_dev.yml -k -c 5 -s sourcename -e entityname
 ```
 
-Will delete load logs, profile data, HDFS contents and Hive patitions for the named
+Will delete load logs, profile data, HDFS contents and Hive partitions for the named
 Source / Entity, retaining the last 5 most recent FINISHED data loads.
 
 Note: This will only work against snapshots not incremental data loads.
@@ -256,7 +256,7 @@ Note: This will only work against snapshots not incremental data loads.
 ./pd_shell.sh -y pd_dev.yml -k -c 5 -w workflowname
 ```
 
-Will delete load logs,  HDFS contents and Hive patitions for the named
+Will delete load logs,  HDFS contents and Hive partitions for the named
 workflow, retaining the last 5 most recent FINISHED executions.
 
 ## Verbose Output (-v)
