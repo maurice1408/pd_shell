@@ -164,7 +164,7 @@ id,srcid,srcname,entityid,entityname,status,starttime,endtime,loadtime,recordcou
 
 Will execute the named workflow using the `default:engine` engine.
 
-`default:engine` may be overridden using the `-m` option (TEZ/MAPREDUCE).
+`default:engine` may be overridden using the `-t` option (TEZ/MAPREDUCE).
 
 `workflowname` can be a single unquoted Podium Workflow name or a
 quoted list of workflowname names e.g. "wf1 wf2 wf33" etc.
@@ -172,6 +172,8 @@ quoted list of workflowname names e.g. "wf1 wf2 wf33" etc.
 If a quoted list of Workflow names is given `pd_shell` will execute up to
 `max_jobs` workflows concurrently, picking the next workflow from the list as
 each workflow completes until the list is exhausted.
+
+`max_jobs` may be overridden using the `-m` option.
 
 `pd_shell` will report on the workflow status every `refresh_interval` seconds
 until complete.
