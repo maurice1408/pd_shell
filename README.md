@@ -19,7 +19,8 @@ is not used.
 
 The complete documentation for `pd_shell` is "work in progress" so the most
 common `pd_shell` operations are documented in this README in the form of 
-examples.
+examples. Some feature of `pd_shell` e.g. execute a publish job, will be documented
+in the next commit.
 
 ## Installation
 
@@ -68,8 +69,7 @@ Table: `pd_shell` defaults
 
 | Parameter | Description                               |
 | --------- | ----------------------------------------- |
-| max_jobs  | The maximum number of ingest / workflows  |
-|           | executed concurrently by `pd_shell`       |
+| max_jobs  | The maximum number of ingest / workflows executed concurrently by `pd_shell`       |
 | refresh_interval | time in sec between `pd_shell` msgs |
 | log_file  | logfile name written by `pd_shell`        |
 | engine    | Defalut engine used to execute workflows  |
@@ -98,9 +98,9 @@ Expiry:    2020-06-30
 
 Will initiate a data load for the named source / entity.
 
-`sourcename` must be a single Podiun Source name.
+`sourcename` must be a single Podium Source name.
 
-`entityname` can be a single un-quoted Podiun Entity name or a
+`entityname` can be a single unquoted Podium Entity name or a
 quoted list of Entity names e.g. "ent1 ent2 ent3" etc.
 
 Note: `sourcename` and `entityname` are not case sensitive.
@@ -166,7 +166,7 @@ Will execute the named workflow using the `default:engine` engine.
 
 `default:engine` may be overridden using the `-m` option (TEZ/MAPREDUCE).
 
-`workflowname` can be a single un-quoted Podiun Workflow name or a
+`workflowname` can be a single unquoted Podium Workflow name or a
 quoted list of workflowname names e.g. "wf1 wf2 wf33" etc.
 
 If a quoted list of Workflow names is given `pd_shell` will execute up to
@@ -203,7 +203,7 @@ id,name,status,starttime,endtime,loadtime,recordcount
 
 ### Export / Import Podium Objects (-x -i)
 
-Export a complete Source
+#### Export a complete Source
 
 ```
 :~ ./pd_shell.sh -y pd_dev.yml -x -s XXX_SRC
@@ -211,12 +211,20 @@ Export a complete Source
 2018-04-19 09:22:07 - Source XXX_SRC exported to file XXX_SRC_163_2018-04-19T13:21:42.zip
 ```
 
-Export a Source / Entity
+#### Export a Source / Entity
 
 ```
 :~ ./pd_shell.sh -y pd_dev.yml -x -s XXX_SRC -e activity_type_t
 
 2018-04-19 09:24:39 - Entity XXX_SRC.activity_type_t exported to file XXX_SRC_activity_type_t_10826_2018-04-19T13:24:20.zip
+```
+
+#### Export a Workflow
+
+```
+./pd_shell.sh -y pd_dev.yml -x -w workflowname
+2018-04-19 10:17:15 - workflow_id: 33640
+2018-04-19 10:17:17 - Workflow prod_aeb_policy_profile_v exported to file workflowname_33640_2018-04-19T14:17:15.zip
 ```
 
 NOTE: Import is still in test.
