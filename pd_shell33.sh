@@ -83,13 +83,13 @@ function pd_login() {
     local user="$1"
     local pwd="$2"
     local podium_url="$3"
-	local __resultvar=$4
+	 local __resultvar=$4
 
     local api_function="j_spring_security_check"
 
     cookiename="cookie-jar-${RANDOM}.txt"
 
-    cmd="curl -s -c ${cookiename} --data 'j_username=$user&j_password=$pwd' '${podium_url}/${api_function}'"
+    cmd="${curlcmd} -s -c ${cookiename} --data 'j_username=$user&j_password=$pwd' '${podium_url}/${api_function}'"
 
 	if (( verbose ))
 	then
@@ -130,7 +130,7 @@ function pd_about() {
 
 	local api_function="about/getAboutInformation"
 
-	cmd="curl -b ${cookiename} -X GET '${podium_url}/${api_function}'"
+	cmd="${curlcmd} -b ${cookiename} -X GET '${podium_url}/${api_function}'"
 
 	if (( verbose ))
 	then
@@ -185,7 +185,7 @@ function pd_getversion() {
 
 	local api_function="about/getAboutInformation"
 
-	cmd="curl -b ${cookiename} -X GET '${podium_url}/${api_function}'"
+	cmd="${curlcmd} -b ${cookiename} -X GET '${podium_url}/${api_function}'"
 
 	if (( verbose ))
 	then
@@ -256,7 +256,7 @@ function pd_exportentity() {
 		exit 1
 	  fi
 
-      cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entity_id}' --output ${__output_file_name}"
+      cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entity_id}' --output ${__output_file_name}"
 	else
       log "${__funcname}: source: ${sourcename}, entity: ${entityname} - not found"
 	  exit 1
@@ -323,7 +323,7 @@ function pd_import() {
 
 	local api_function="metadataImport/v2/upload"
 
-    cmd="curl -s -b ${cookiename} '${podium_url}/${api_function}' -F 'file=@${import_file_name}'" 
+    cmd="${curlcmd} -s -b ${cookiename} '${podium_url}/${api_function}' -F 'file=@${import_file_name}'" 
 
 	if (( verbose ))
 	then
@@ -369,7 +369,7 @@ function pd_exportsource() {
 	then
 	  __output_file_timestamp=$(gawk 'BEGIN {print strftime("%FT%T", systime(),1)}')
 	  __output_file_name="${sourcename}_${source_id}_${__output_file_timestamp}.zip"
-      cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${source_id}' --output ${__output_file_name}"
+      cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${source_id}' --output ${__output_file_name}"
 	else
       log "${__funcname}: source: ${sourcename} - not found"
 	  exit 1
@@ -425,7 +425,7 @@ function pd_exportworkflow() {
 	then
 	  __output_file_timestamp=$(gawk 'BEGIN {print strftime("%FT%T", systime(),1)}')
 	  __output_file_name="${workflowname}_${workflow_id}_${__output_file_timestamp}.zip"
-      cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflow_id}' --output ${__output_file_name}"
+      cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflow_id}' --output ${__output_file_name}"
 	else
       log "${__funcname}: workflow: ${workflowname} - not found"
 	  exit 1
@@ -473,7 +473,7 @@ function pd_getdataflowid() {
 
 	local api_function="transformation/v1/getDataflowId"
 
-    cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}?dataflowName=${workflowName}'"
+    cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}?dataflowName=${workflowName}'"
 
 	if (( verbose ))
 	then
@@ -526,7 +526,7 @@ function pd_getworkflowstatus() {
 
 	local api_function="transformation/v1/loadAllWorkOrders/"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=1&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=1&sortAttr=loadTime&sortDir=DESC'"
     
 	if (( verbose ))
 	then
@@ -579,7 +579,7 @@ function pd_rptworkflowstatus() {
     # Podium 3.2, check documentation
 	local api_function="transformation/v1/loadAllWorkOrders/"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
     
 	if (( verbose ))
 	then
@@ -640,7 +640,7 @@ function pd_rptentitystatus() {
 
 	local api_function="entity/v1/loadLogs/"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
     
 	if (( verbose ))
 	then
@@ -732,7 +732,7 @@ function pd_dataloadcleanup() {
 
 	local api_function="entity/v1/loadLogs/"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
     
 	if (( verbose ))
 	then
@@ -758,7 +758,7 @@ function pd_dataloadcleanup() {
 
 	for i in $(echo $workorderids | tr ' ' '\n' | sort -n)
 	do
-	    cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
+	    cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
 		log $cmd
 	    json=$(eval ${cmd})
 	    log "pd_dataloadcleanup: ${json}"
@@ -792,7 +792,7 @@ function pd_deleteexelogdata() {
 
 	local api_function="transformation/v1/loadAllWorkOrders/"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${workflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
     
 	if (( verbose ))
 	then
@@ -812,7 +812,7 @@ function pd_deleteexelogdata() {
 
 	for i in $workorderids
 	do
-	    cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
+	    cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
 		log $cmd
 	    json=$(eval ${cmd})
 	    log "pd_dataloadcleanup: ${json}"
@@ -855,7 +855,7 @@ function pd_loadlogdetail() {
 
 	local api_function="entity/v1/loadLogDetail"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${logId}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${logId}'"
 	if (( verbose ))
 	then
 	  log "${__funcname}: cmd = ${cmd}"
@@ -914,13 +914,13 @@ function pd_executeworkflow() {
       # Podium 3.2, check documentation
 	  local api_function="transformation/v1/executeDataFlow"
 
-	  cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}'  -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{}' -compressed"
+	  cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}'  -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{}' -compressed"
       log "${__funcname}: cmd = ${cmd}"
 
 	else
 
 	  local api_function="transformation/v1/executeWithParmas"
-      cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '${params}' -compressed"
+      cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '${params}' -compressed"
       log "${__funcname}: cmd = ${cmd}"
 
 	fi
@@ -970,7 +970,7 @@ function pd_loaddata() {
 
 	loadtime=$(gawk 'BEGIN {print strftime("%FT%T.000Z", systime(),1)}')
 
-    cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${doAsynch}' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '[{\"loadTime\":\"${loadtime}\",\"entityId\":${entity_id}}]' -compressed"
+    cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${doAsynch}' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '[{\"loadTime\":\"${loadtime}\",\"entityId\":${entity_id}}]' -compressed"
 
     if (( verbose ))
     then
@@ -998,7 +998,7 @@ function pd_checkentity() {
     # 1 - cookiename
     # 2 - podium url
     # 3 - source id
-	# 4 - entity name 
+    # 4 - entity name 
     # 5 - result variable name
 
     # returns entity_id if entity found or entity_id of zero if not
@@ -1011,7 +1011,7 @@ function pd_checkentity() {
 	  exit 1
 	fi
 
-    local cookiename="$1"
+   local cookiename="$1"
 	local podium_url="$2"
 	local sourceid="$3"
 	local entityname="$4"
@@ -1022,7 +1022,9 @@ function pd_checkentity() {
 	local -i __entity_id=0
 	local -i __full_list_size=0
 
-    cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${sourceid}/2/${entityname}'"
+   entityname=$(echo $entityname | tr A-Z a-x)
+
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${sourceid}/30/${entityname}'"
 
 	if (( verbose ))
 	then
@@ -1056,7 +1058,8 @@ function pd_checkentity() {
 		  log "${__funcname}: ${#json_list[@]} entries on entity list fullListSize is ${__full_list_size}"
 		fi
 
-        # Scan the list for the entity name
+      # Scan the list for the entity name
+      ret_entity_id=0
 		for i in ${!json_list[@]}
 		do
 		  j="${json_list[$i]}"
@@ -1064,16 +1067,17 @@ function pd_checkentity() {
 		  __entity_id=$(json_extract_integer "id" "'${j}'")
 		  if (( verbose ))
 		  then
-			printf "Entity name: %s, id: %d\n" "${__entity_name}" "${__entity_id}"
+			printf "Lo0king for ${entityname}: Current entity name: %s, id: %d\n" "${__entity_name}" "${__entity_id}"
 		  fi
 		  if [[ ${__entity_name} == $entityname ]]
 		  then
+          ret_entity_id=$__entity_id
 		    break
 		  fi
 		done
 	fi
 
-	eval $__resultvar="'$__entity_id'"
+	eval $__resultvar="'$ret_entity_id'"
 
 }
 
@@ -1106,7 +1110,7 @@ function pd_checksource() {
 
 	local is_available=""
 
-    cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${sourcename}'"
+    cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${sourcename}'"
 
 	if (( verbose ))
 	then
@@ -1141,7 +1145,7 @@ function pd_getsources() {
 
 	local api_function="source/v1/getSources"
 
-    cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}'"
+    cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}'"
 
 	if (( verbose ))
 	then
@@ -1212,7 +1216,7 @@ function pd_getentities() {
 	
 	while true
 	do
-		cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${__source_id}?count=${count}&start=${start}'"
+		cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${__source_id}?count=${count}&start=${start}'"
 
 		if (( verbose ))
 		then
@@ -1293,7 +1297,7 @@ function pd_getsourceid() {
 
 	local api_function="source/v1/getSourcesByCrit"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/2/${sourcename}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/2/${sourcename}'"
 
     if (( verbose ))
 	then
@@ -1368,7 +1372,7 @@ function pd_getentityid() {
     local __entity_id=0
 	local api_function="entity/v1/getEntitiesByCrit"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}?srcName=${sourcename}&entityName=${entityname}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}?srcName=${sourcename}&entityName=${entityname}'"
   
     if (( verbose ))
 	then
@@ -1421,7 +1425,7 @@ function pd_getentityproperty() {
 
 	local api_function="entity/v1/getProperty"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityid}/${propertyname}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityid}/${propertyname}'"
   
     if (( verbose ))
 	then
@@ -1467,7 +1471,7 @@ function pd_getjobs() {
 
 	local api_function="publish/v1/getJobs"
 
-	cmd="curl -s -b ${cookiename} -X GET '${podium_url}/${api_function}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}'"
   
     if (( verbose ))
 	then
@@ -1576,7 +1580,7 @@ function pd_schedule() {
 
 	local api_function="publish/v1/schedule"
 
-	cmd="curl -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${jobid}'"
+	cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${jobid}'"
   
     if (( verbose ))
 	then
@@ -1653,7 +1657,7 @@ do
   	w  ) is_workflow=1
 	     pd_objects=$OPTARG
 	     ;;
-    e  ) is_entity=1
+   e  ) is_entity=1
 	     pd_objects=$OPTARG
 	     ;;
 	m  ) max_jobs=$OPTARG
@@ -1690,6 +1694,7 @@ do
 	     exit 1
 	esac
 done
+
 
 # Shift the options out of the way
 shift $((OPTIND-1))
@@ -1732,6 +1737,13 @@ refresh_interval=${default_refresh_interval:-2}
 log_file=${default_log_file:-"pd_load.log"}
 engine=${engine:-$default_engine}
 rpt_count=${rpt_count:-5}
+
+if (( verbose ))
+then
+   curlcmd="curl --verbose"
+else
+   curlcmd="curl --silent"
+fi
 
 # #######################
 # Establish Podium Sesssion
