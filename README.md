@@ -10,22 +10,22 @@
 * Report on executed ingests / workflows
 * Export / Import Podium objects
 
-NOTE: `pd_shell` does not yet support Podium Release 3.2+ (support due 05/2018).
-
 `pd_shell` uses the Podium REST API to communicate with your Podium system.
 
 All API calls are via cURL the Podium Java based command line utility (CLU)
 is not used.
 
-The complete documentation for `pd_shell` is "work in progress" so the most
-common `pd_shell` operations are documented in this README in the form of 
-examples. Some feature of `pd_shell` e.g. execute a publish job, will be documented
-in the next commit.
+The complete documentation for `pd_shell` is "work in
+progress" so the most common `pd_shell` operations are
+documented in this README in the form of examples. Some
+feature of `pd_shell` e.g. execute a publish job, will be
+documented in the next commit.
 
 ## Installation
 
-Clone this github repository and copy the *sh and *gawk files to
-a suitable directory on your edge node or any suitable Linux platform.
+Clone this github repository and copy the *sh and *gawk
+files to a suitable directory on your edge node or any
+suitable Linux platform.
 
 ### Podium 3.2+
 
@@ -83,16 +83,16 @@ Table: `pd_shell` defaults
 
 | Parameter | Description                               |
 | --------- | ----------------------------------------- |
-| max_jobs  | The maximum number of ingest / workflows executed concurrently by `pd_shell`       |
-| refresh_interval | time in sec between `pd_shell` msgs |
-| log_file  | logfile name written by `pd_shell`        |
-| engine    | Defalut engine used to execute workflows  |
+| `max_jobs`  | The maximum number of ingest / workflows executed concurrently by `pd_shell`       |
+| `refresh_interval` | time in sec between `pd_shell` msgs |
+| `log_file`  | logfile name written by `pd_shell`        |
+| `engine`    | Default engine used to execute workflows  |
 
 ## Examples
 
 ### About (-a)
 
-The about option may be used to retrieve information about your
+The `about` option may be used to retrieve information about your
 Podium environment and also check that `pd_shell` can connect to your
 Podium system.
 
