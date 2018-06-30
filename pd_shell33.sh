@@ -1019,7 +1019,7 @@ function pd_checkentity() {
 
 	local api_function="entity/external/entitiesBySrc"
 
-	local -i __entity_id=0
+	local -i __ret_entity_id=0
 	local -i __full_list_size=0
 
    entityname=$(echo $entityname | tr A-Z a-z)
@@ -1046,7 +1046,7 @@ function pd_checkentity() {
 	  then
         log "${__funcname}: zero length entity list returned"
 	  fi
-	  __entity_id=0
+	  __ret_entity_id=0
     else
 		# Create json_list array
 		# eval $(json_parse_list '{"id":\d+.*?}' "$json")
@@ -1059,7 +1059,7 @@ function pd_checkentity() {
 		fi
 
       # Scan the list for the entity name
-      ret_entity_id=0
+	   __ret_entity_id=0
 		for i in ${!json_list[@]}
 		do
 		  j="${json_list[$i]}"
@@ -1071,7 +1071,7 @@ function pd_checkentity() {
 		  fi
 		  if [[ ${__entity_name} == $entityname ]]
 		  then
-          ret_entity_id=$__entity_id
+          __ret_entity_id=$__entity_id
 		    break
 		  fi
 		done
@@ -2099,17 +2099,16 @@ do
 
 	  if (( entity_id ==  0 ))
 	  then
-	  
 	    log "Entity ${podium_source}.${object_name} not found"
 		exit 1
 
 	  else
 
-		if [[ $is_report -eq 1 ]]
+        if (( is_report ))
 		then
 		  pd_rptentitystatus ${cookiename} ${podium_url} ${entity_id} $rpt_count ${is_long_report}
 		  job_id=0
-		elif [[ $is_klean -eq 1 ]]
+     elif (( is_klean ))
 		then
 		  pd_getentityproperty ${cookiename} ${podium_url} ${entity_id} "entity.base.type" base_type
 
@@ -2129,7 +2128,7 @@ do
 
 	  fi
 
-	elif [[ ${is_workflow} -eq 1 ]]  
+  elif (( is_workflow ))  
 	then
 
 	  workflow_name=$object_name

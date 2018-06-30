@@ -1,4 +1,5 @@
 *.bak
-*.un~
-*.~
+*.*~
 cookie*
+*.log
+*gitignore*
