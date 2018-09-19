@@ -1926,31 +1926,45 @@ do
   assert "$is_export -eq 0" $LINENO 
   
   running_index=0
+
   log "${running_count} jobs still running"
+
   while [ ${running_index} -lt ${running_count} ]
   do 
     job_id=${running[$running_index]}
 
     if [[ $is_entity -eq 1 ]]
-	then
+    then
       pd_loadlogdetail ${cookiename} ${podium_url} ${job_id} status recordcount goodrecordcount
-	fi
+	 fi
 		  
     if [[ $is_workflow -eq 1 ]]
     then
       pd_getworkflowstatus ${cookiename} ${podium_url} ${job_id} status recordcount
-	fi
+    fi
 
     log "${job_id} - ${object_ref[${job_id}]} ${status}"
 
-    if [ "${status}" == "FINISHED" ]
-    then
-      log "${job_id} ${object_ref[$job_id]} is finished, ${recordcount} records"
-      unset running[$running_index]
-	else
-	  sleep ${refresh_interval}
-    fi
-	let "running_index = $running_index + 1"
+    case ${status} in
+       FINISHED | FAILED* | TERMINATED*) 
+         log "${job_id} ${object_ref[$job_id]} is ${status}, ${recordcount} records"
+         unset running[$running_index]
+         ;;
+       *)
+	      sleep ${refresh_interval}
+         ;;
+    esac
+
+
+    #if [ "${status}" == "FINISHED" ]
+    #then
+    #  log "${job_id} ${object_ref[$job_id]} is finished, ${recordcount} records"
+    #  unset running[$running_index]
+	 #else
+	 # sleep ${refresh_interval}
+    # fi
+
+    let "running_index = $running_index + 1"
 
   done
   running=("${running[@]}")
