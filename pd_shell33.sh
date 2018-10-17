@@ -137,7 +137,7 @@ function pd_about() {
 	  log "${__funcname}: cmd = ${cmd}"
 	fi
 
-    json=$(eval ${cmd})
+   json=$(eval ${cmd})
 
 	if (( verbose ))
 	then
@@ -147,7 +147,12 @@ function pd_about() {
 	__version=$(json_extract_string "prodVersion" "'$json'")
 	__build=$(json_extract_string "buildVersion" "'$json'")
 	__schema=$(json_extract_string "schemaVersion" "'$json'")
-	__expiry=$(json_extract_string "expiryDateString" "'$json'")
+   if [[ $json_parse == "native" ]]
+   then
+	  __expiry=$(json_extract_string "expiryDateString" "'$json'")
+   else
+	  __expiry=$(json_extract_string "licenseInfo.expiryDateString" "'$json'")
+   fi
 
 
 	printf "Version:   %s\n" $__version
@@ -176,7 +181,7 @@ function pd_getversion() {
 	  exit 1
 	fi
 
-    local cookiename="$1"
+   local cookiename="$1"
 	local podium_url="$2"
 
 	local __resultvar=$3
@@ -192,19 +197,20 @@ function pd_getversion() {
 	  log "${__funcname}: cmd = ${cmd}"
 	fi
 
-    json=$(eval ${cmd})
+   json=$(eval ${cmd})
 
 	if (( verbose ))
 	then
-	  log "${__funcname}: json = ${json}"
+	  #log "${__funcname}: json = ${json}"
+	  json_dump ${__funcname} "'${json}'"
 	fi
 
-    __version=$(json_extract_string "prodVersion" "'${json}'")
+   __version=$(json_extract_string "prodVersion" "'${json}'")
 
-    if (( verbose ))
+   if (( verbose ))
 	then
 	  log "${__funcname}: Podium version = ${__version}"
-    fi
+   fi
 
 	eval $__resultvar="'$__version'"
 }
@@ -227,7 +233,7 @@ function pd_exportentity() {
 	  exit 1
 	fi
 
-    local cookiename="$1"
+   local cookiename="$1"
 	local podium_url="$2"
 	local sourcename="$3"
 	local entityname="$4"
@@ -1737,6 +1743,8 @@ refresh_interval=${default_refresh_interval:-2}
 log_file=${default_log_file:-"pd_load.log"}
 engine=${engine:-$default_engine}
 rpt_count=${rpt_count:-5}
+json_parse=${json_parse:-"native"}
+
 
 if (( verbose ))
 then

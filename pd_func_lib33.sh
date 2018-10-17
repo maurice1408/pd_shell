@@ -107,25 +107,39 @@ function json_parse_list() {
 #######################################################################
 function json_extract_string() {
 
-    # 1 - field name to extract, the value is expected to be a string
-    # 2 - json string to be parsed
+   # 1 - field name to extract, the value is expected to be a string
+   # 2 - json string to be parsed
+   local __funcname=${FUNCNAME[0]}
 
 	local field_name=$1
 	local json=$2
 
 	local __value=""
+	local cmd=""
 
 	#local regexp="(?<=\"${field_name}\":)\"(.*?)\"(?=[,}])"
 	#local regexp="(?<=\"${field_name}\":\")(.*?)(?=[\",}])"
-	local regexp="(?<=\"${field_name}\":\")(.*?)(?=\")"
 
-	local cmd
-	cmd="echo $json | grep --only-matching --perl-regex '$regexp'"
+   if [[ $json_parse == "native" ]]
+   then
+	  local regexp="(?<=\"${field_name}\":\")(.*?)(?=\")"
+	  cmd="echo $json | grep --only-matching --perl-regex '$regexp'"
+   fi
 
-	__value=$(eval $cmd)
+   if [[ $json_parse == "jq" ]]
+   then
+	  cmd="echo $json | ${jq_exec} '.${field_name}'"
+   fi
+
+   if [[ -z $cmd ]]
+   then
+      log "No json parse engine"
+      exit 1
+   fi
+
+   __value=$(eval $cmd)
 
 	echo -n "$__value"
-
 }
 
 #######################################################################
@@ -146,7 +160,7 @@ function json_extract_integer() {
 	  __occ=1
 	fi
 
-    local __value=0
+   local __value=0
 
 	local regexp="(?<=\"${field_name}\":)([0-9]+)(?=[,}])"
 
@@ -161,10 +175,10 @@ function json_extract_integer() {
 #######################################################################
 function conv_epoch() {
 
-    # 1 - epoch timestamp to be converted
+   # 1 - epoch timestamp to be converted
 	#     this is a Podium timestamp
 
-    echo "$(echo $1 | gawk '{printf "%s", strftime("%Y-%m-%d %H:%M:%S", substr($0,1,10))}')"
+   echo "$(echo $1 | gawk '{printf "%s", strftime("%Y-%m-%d %H:%M:%S", substr($0,1,10))}')"
 
 }
 #######################################################################
@@ -174,5 +188,28 @@ function format_info_message() {
 
     echo "$(echo $1 |  gawk '{gsub(/\\n/, "\012");gsub(/\\t/, "\011");print}')"
 
+
+}
+#######################################################################
+function json_dump() {
+
+    # 1 - calling function anme
+    # 2 - json
+
+    local __funcname=$1
+    local __json="$2"
+    local __cmd
+
+    if [[ $json_parse == "native" ]]
+    then
+      log "${__funcname}: JSON = ${__json}"
+    fi
+
+    if [[ $json_parse == "jq" ]]
+    then
+      cmd="echo ${__json} | ${jq_exec} '.'"
+      log "${__funcname}:"
+      log "$(eval $cmd)"
+    fi
 
 }
