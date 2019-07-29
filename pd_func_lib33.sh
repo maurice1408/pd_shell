@@ -28,7 +28,12 @@ function log_date() {
 
 #######################################################################
 function log() {
-  echo "$(log_date) $@" | tee -a ./${log_file}
+  printf "%s %s\n" "$(log_date)" "$@" | tee -a ${log_file}
+}
+
+#######################################################################
+function logq() {
+  echo "$(log_date) $@" >> ${log_file}
 }
 
 #######################################################################
@@ -59,124 +64,145 @@ assert ()                 #  If condition false,
 #######################################################################
 function json_parse_list() {
 
-    # Expected args
-    # 1 - regexp to use to parse list entries out
-    # 2 - json to parse
+   # Expected args
+   # 1 - regexp to use to parse list entries out
+   # 2 - json to parse
 
-    # Returns the source via declare -p of an array containing the list of items matching regexp
-    # To create an array from the returned value wrap the call to this function in an eval $()
+   # Returns the source via declare -p of an array containing the list of items matching regexp
+   # To create an array from the returned value wrap the call to this function in an eval $()
 
-    # Podiun REST API responses have the form
-    # {"subList":[{},{},...],"fullListSize":\d+,...}
-    #
-    # Typically the {} entires will be {id:\d+,....}
-    #
-    # A nongreedy perl regex like  {"id":\d+.*?} is used by grep to extract the subList 
-    # entries which are then single-quoted by a gawk script that creates the array
-    # json_list.
-    # The output from the gawk is json_list=('...','...','...', ...) which is evaluated to
-    # create the array.
-    #
-    # Since it is not possible to pass back an array, a declare -p of the array is passed
-    # back so the call to the function must be wrapped in an eval
-    # 
+   # Podiun REST API responses have the form
+   # {"subList":[{},{},...],"fullListSize":\d+,...}
+   #
+   # Typically the {} entires will be {id:\d+,....}
+   #
+   # A nongreedy perl regex like  {"id":\d+.*?} is used by grep to extract the subList 
+   # entries which are then single-quoted by a gawk script that creates the array
+   # json_list.
+   # The output from the gawk is json_list=('...','...','...', ...) which is evaluated to
+   # create the array.
+   #
+   # Since it is not possible to pass back an array, a declare -p of the array is passed
+   # back so the call to the function must be wrapped in an eval
+   #
 
-    local __funcname=${FUNCNAME[0]}
+   local __funcname=${FUNCNAME[0]}
 
-	if [[ $# -ne 2 ]]
-	then
-	  echo "${_funcname}: expected 2 arguments, rexexp and json" >&2
-	  exit 1
-	fi
+   if [[ $# -ne 2 ]]
+   then
+     echo "${_funcname}: expected 2 arguments, rexexp and json" >&2
+     exit 1
+   fi
 
-    local list_regexp="$1"
-    local json="$2"
+   declare -a json_list
+   local list_regexp="$1"
+   local json="$2"
 
-	# echo "${list_regexp}"
-	# echo "${json}"
+   if [[ "jq" == "native" ]]
+   then   
 
-	declare -a json_list
+      # echo "${list_regexp}"
+      # echo "${json}"
 
-	# eval $(echo $json | grep --only-matching --perl-regexp $list_regexp | gawk -v q="'" 'BEGIN {printf "json_list=("}; {printf "%s%s%s ", q, $0, q}; END {print ")"}')
+      # eval $(echo $json | grep --only-matching --perl-regexp $list_regexp | gawk -v q="'" 'BEGIN {printf "json_list=("}; {printf "%s%s%s ", q, $0, q}; END {print ")"}')
 
-	# declare -p json_list
+      # declare -p json_list
 
-	echo $json | grep --only-matching --perl-regexp $list_regexp | gawk -v q="'" 'BEGIN {printf "json_list=("}; {gsub(/\047/,""); printf "%s%s%s ", q, $0, q}; END {print ") "}'
+      echo $json | grep --only-matching --perl-regexp $list_regexp | gawk -v q="'" 'BEGIN {printf "json_list=("}; {gsub(/\047/,""); printf "%s%s%s ", q, $0, q}; END {print ") "}'
+
+   else
+      ## echo $json | ${jq_exec} -c '.subList[]' | gawk -v q="'" 'BEGIN {printf "json_list=("}; {gsub(/\047/,""); printf "%s%s%s ", q, $0, q}; END {print ") "}'
+      ${jq_exec} -c '.subList[]' $json | gawk -v q="'" 'BEGIN {printf "json_list=("}; {gsub(/\047/,""); printf "%s%s%s ", q, $0, q}; END {print ") "}'
+   fi
 
 }
+
 #######################################################################
 function json_extract_string() {
 
    # 1 - field name to extract, the value is expected to be a string
-   # 2 - json string to be parsed
+   # 2 - json file name
+
    local __funcname=${FUNCNAME[0]}
 
-	local field_name=$1
-	local json=$2
+   local field_name=$1
+   local __json=$2
 
-	local __value=""
-	local cmd=""
+   local __value=""
+   local cmd=""
 
-	#local regexp="(?<=\"${field_name}\":)\"(.*?)\"(?=[,}])"
-	#local regexp="(?<=\"${field_name}\":\")(.*?)(?=[\",}])"
+   # Remove surrounding quotation marks with -r
+   cmd="${jq_exec} -r '.${field_name}' $__json"
 
-   if [[ $json_parse == "native" ]]
+   if (( verbose ))
    then
-	  local regexp="(?<=\"${field_name}\":\")(.*?)(?=\")"
-	  cmd="echo $json | grep --only-matching --perl-regex '$regexp'"
+      logq "${__funcname}: Executing cmd: $cmd"
    fi
 
-   if [[ $json_parse == "jq" ]]
-   then
-	  cmd="echo $json | ${jq_exec} '.${field_name}'"
-   fi
+   __value="$(eval $cmd)"
 
-   if [[ -z $cmd ]]
-   then
-      log "No json parse engine"
-      exit 1
-   fi
-
-   __value=$(eval $cmd)
-
-	echo -n "$__value"
+   echo -n "$__value"
 }
 
 #######################################################################
 function json_extract_integer() {
 
-    # 1 - field name to extract, the value is expected to be a string
-    # 2 - json integer to be parsed
-    # 3 - number of occurences to return
+   # 1 - field name to extract, the value is expected to be a string
+   # 2 - json integer to be parsed
+   # 3 - number of occurences to return
 
-	local field_name=$1
-	local json=$2
-	local __occ
-
-	if (( $# == 3 ))
-    then 
-	  __occ=$3
-	else
-	  __occ=1
-	fi
-
+   local __funcname=${FUNCNAME[0]}
+   local field_name=$1
+   local json=$2
+   local __occ
+   local __lineno=${BASH_LINENO[0]}
+   local cmd=""
    local __value=0
 
-	local regexp="(?<=\"${field_name}\":)([0-9]+)(?=[,}])"
+   if (( verbose ))
+   then
+      logq "json_extract_integer called from ${__lineno}"
+   fi
 
-	local cmd
-	cmd="echo $json | grep --only-matching --perl-regex --regexp '$regexp' | head -${__occ}"
+   if (( $# == 3 ))
+   then
+     __occ=$3
+   else
+     __occ=1
+   fi
 
-	__value=$(eval $cmd)
+   if [[ "${json_parse}" == "native" ]]
+   then
+     local regexp="(?<=\"${field_name}\":)([0-9]+)(?=[,}])"
+     cmd="echo $json | grep --only-matching --perl-regex --regexp '$regexp' | head -${__occ}"
+   fi
 
-	echo -n "$__value"
+   if [[ "${json_parse}" == "jq" ]]
+   then
+     # Remove surrounding quotation marks with sed
+     cmd="echo $json | ${jq_exec} '.${field_name}' | sed -e 's/\x22//g'"
+   fi
+
+   if (( verbose ))
+   then
+      logq "${__funcname}: Executing cmd: $cmd"
+   fi
+
+   __value="$(eval $cmd)"
+
+   if (( verbose ))
+   then
+      logq "${__funcname}: returning __value: ${__value}"
+   fi
+
+   echo -n "${__value}"
 
 }
 #######################################################################
 function conv_epoch() {
 
    # 1 - epoch timestamp to be converted
-	#     this is a Podium timestamp
+   #     this is a Podium timestamp
 
    echo "$(echo $1 | gawk '{printf "%s", strftime("%Y-%m-%d %H:%M:%S", substr($0,1,10))}')"
 
@@ -193,23 +219,55 @@ function format_info_message() {
 #######################################################################
 function json_dump() {
 
-    # 1 - calling function anme
-    # 2 - json
+    # 1 - calling function name
+    # 3 - json
 
     local __funcname=$1
     local __json="$2"
+    local __lineno=${BASH_LINENO[0]}
     local __cmd
 
-    if [[ $json_parse == "native" ]]
+    ## tmpfile=$(mktemp --suffix=.json file-XXXX)
+
+    ## if [[ "${json_parse}" == "native" ]]
+    ## then
+    ##   log "${__funcname}: JSON = ${__json}"
+    ## fi
+
+    if [[ "${json_parse}" == "jq" ]]
     then
-      log "${__funcname}: JSON = ${__json}"
+      log "json_dump called from: ${__funcname}: lineno: ${__lineno} __tmpfile: ${__json}"
+      ## echo -n ${__json} > $tmpfile
+      ## cmd="echo ${__json} | ${jq_exec} ${jq_style} '.'"
+      ## cmd="cat $tmpfile | ${jq_exec} ${jq_style} '.'"
+      ${jq_exec} ${jq_style} '.' $__json
+      ## echo "$(eval $cmd)"
+
+      ## cmd="cat $tmpfile | ${jq_exec} --compact-output '.'"
+      ## echo "$(eval $cmd)" >> ${log_file} 
     fi
 
-    if [[ $json_parse == "jq" ]]
-    then
-      cmd="echo ${__json} | ${jq_exec} '.'"
-      log "${__funcname}:"
-      log "$(eval $cmd)"
-    fi
+    # rm $tmpfile
 
 }
+#######################################################################
+function cmpi_str() {
+
+   # Performs a case insensitve compare of 2 strings
+
+   # 1 - string 1
+   # 2 - string 2
+
+   # To be used in if, so returns 0 for match, 1 for no match
+
+   __str1=$(echo "$1" | tr [:upper:] [:lower:])
+   __str2=$(echo "$2" | tr [:upper:] [:lower:])
+
+   if [[ "${__str1}" == "${__str2}" ]]
+   then
+      return 0
+   else
+      return 1
+   fi
+}
+
