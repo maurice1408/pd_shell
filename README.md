@@ -55,7 +55,7 @@ file used when executing `pd_shell`.
 When `pd_shell` is run with the `-v` (verbose) option then output from
 API calls is saved to a file and then dumped using `jq`. This can be
 useful for exploring the responses given by the REST API, but will
-potentially a lot of output files!
+potentially produce a lot of output files!
 
 ## Configuration
 
