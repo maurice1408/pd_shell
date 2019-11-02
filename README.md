@@ -6,9 +6,10 @@
 
 * View info about your QDC system
 * Execute a Load Data request for a Source / Entity
-* Execute a Workflow
-* Report on executed ingests / workflows
+* Execute a dataflow
+* Report on executed ingests / dataflows
 * Export / Import QDC objects
+* Clean (delete) ingest and dataflow execution logs.
 
 `pd_shell` uses the QDC REST API to communicate with your QDC system.
 
@@ -111,10 +112,10 @@ Table: `pd_shell` defaults
 
 | Parameter | Description                               |
 | --------- | ----------------------------------------- |
-| `max_jobs`  | The maximum number of ingest / workflows executed concurrently by `pd_shell`       |
+| `max_jobs`  | The maximum number of ingest / dataflows executed concurrently by `pd_shell`       |
 | `refresh_interval` | time in sec between `pd_shell` progress msgs |
 | `log_file`  | logfile name written by `pd_shell`        |
-| `engine`    | Default engine used to execute workflows  |
+| `engine`    | Default engine used to execute dataflows  |
 
 Table: jq Config
 
@@ -205,35 +206,35 @@ id,srcid,srcname,entityid,entityname,status,starttime,endtime,loadtime,recordcou
 2018-04-19 09:08:56 - Done
 ```
 
-### Execute Workflow(s) (-w)
+### Execute dataflow(s) (-w)
 
 ```bash
-./pd_shell.sh -y pd_dev.yml -w workflowname
+./pd_shell.sh -y pd_dev.yml -w dataflowname
 ```
 
-Will execute the named workflow using the `default:engine` engine.
+Will execute the named dataflow using the `default:engine` engine.
 
 `default:engine` may be overridden using the `-t` option (TEZ/MAPREDUCE).
 
-`workflowname` can be a single unquoted QDC Workflow name or a
-quoted list of workflowname names e.g. "wf1 wf2 wf33" etc.
+`dataflowname` can be a single unquoted QDC dataflow name or a
+quoted list of dataflowname names e.g. "wf1 wf2 wf33" etc.
 
-If a quoted list of Workflow names is given `pd_shell` will execute up to
-`max_jobs` workflows concurrently, picking the next workflow from the list as
-each workflow completes until the list is exhausted.
+If a quoted list of dataflow names is given `pd_shell` will execute up to
+`max_jobs` dataflows concurrently, picking the next dataflow from the list as
+each dataflow completes until the list is exhausted.
 
 `max_jobs` may be overridden using the `-m` option.
 
-`pd_shell` will report on the workflow status every `refresh_interval` seconds
+`pd_shell` will report on the dataflow status every `refresh_interval` seconds
 until complete.
 
-### Report on a Workflow (-r -c -w)
+### Report on a dataflow (-r -c -w)
 
 ```bash
-./pd_shell.sh -y pd_dev.yml -r -c 5 -w workflowname
+./pd_shell.sh -y pd_dev.yml -r -c 5 -w dataflowname
 ```
 
-Will report on the status of the last 5 workflow executions for the named workflow.
+Will report on the status of the last 5 dataflow executions for the named dataflow.
 
 ```
 :~ ./pd_shell.sh -y pd_dev.yml -r -c 5 -w workflowname
@@ -437,9 +438,9 @@ STORE pdpg_11733 INTO 's3a://slf-us-nv-qar-edl-hive/datacatalyst/receiving/US_De
 -- podium data script generator epilogue
 ```
 
-### Clean (delete) Historical Data Loads and Workflow Executions (-k)
+### Clean (delete) Historical Data Loads and dataflow Executions (-k)
 
-QDC keeps every version of data for a data load or workflow execution.
+QDC keeps every version of data for a data load or dataflow execution.
 
 This can lead to a rapid consumption of space in the Hadoop file system.
 
@@ -462,14 +463,14 @@ Note: This will only work against snapshots not incremental data loads.
 
 `entityname` may be a single unquoted name or a quoted list of entity names.
 
-#### Clean Workflow Execution History
+#### Clean dataflow Execution History
 
 ```bash
-./pd_shell.sh -y pd_dev.yml -k -c 5 -w workflowname
+./pd_shell.sh -y pd_dev.yml -k -c 5 -w dataflowname
 ```
 
 Will delete load logs,  HDFS contents and Hive partitions for the named
-workflow, retaining the last 5 most recent FINISHED executions.
+dataflow, retaining the last 5 most recent FINISHED executions.
 
 ## Verbose Output (-v)
 
