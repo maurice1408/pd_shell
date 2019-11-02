@@ -9,5 +9,11 @@ default:
   log_file: "pd.log"
   engine: "MAPREDUCE"
 
+json:
+  parse: "jq"
+
+jq:
+  exec: "./jq-win64.exe"
+
 hive:
   connect: "jdbc:hive2://yourhive:10000/default;principal=hive/yourhiveprincipal"
