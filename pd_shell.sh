@@ -2489,40 +2489,8 @@ do
 
    assert "$is_export -eq 0" $LINENO 
 
-<<<<<<< HEAD
-    if [[ $is_entity -eq 1 ]]
-    then
-      pd_loadlogdetail ${cookiename} ${podium_url} ${job_id} status recordcount goodrecordcount
-    fi
-		  
-    if [[ $is_workflow -eq 1 ]]
-    then
-      pd_getworkflowstatus ${cookiename} ${podium_url} ${job_id} status recordcount
-    fi
-
-    log "${job_id} - ${object_ref[${job_id}]} ${status}"
-    
-    case ${status} in
-       FINISHED | FAILED* | TERMINATED*) 
-         log "${job_id} ${object_ref[$job_id]} is ${status}, ${recordcount} records"
-         unset running[$running_index]
-         ;;
-       *)
-         sleep ${refresh_interval}
-         ;;
-    esac
-    
-    #if [ "${status}" == "FINISHED" ]
-    #then
-    #  log "${job_id} ${object_ref[$job_id]} is finished, ${recordcount} records"
-    #  unset running[$running_index]
-    #else
-    #  sleep ${refresh_interval}
-    #fi
-
-    let "running_index = $running_index + 1"
-=======
    running_index=0
+
    log "${running_count} jobs still running"
    while [ ${running_index} -lt ${running_count} ]
    do
@@ -2555,7 +2523,6 @@ do
 
    running=("${running[@]}")
    running_count=${#running[@]}
->>>>>>> develop
 
 done
 
