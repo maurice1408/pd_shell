@@ -29,7 +29,26 @@
 # #######################
 # External Functions
 # #######################
-source ./pd_func_lib33.sh
+SOURCE="${BASH_SOURCE[0]}"
+
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to 
+                                               # resolve it relative to the path where the 
+                                               # symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+# printf 'Invoked from %s\n\n' "${DIR}"
+
+if [[ -e ${DIR}/pd_func_lib.sh ]]
+then
+  source ${DIR}/pd_func_lib.sh
+else
+  printf 'Error: %s not found\n\n' "${DIR}/pd_func_lib.sh"
+  exit 1
+fi
 
 # #######################
 # Variables
@@ -42,6 +61,7 @@ declare -a gbl_entity_ids
 
 declare -a object_ref
 declare -i get_fields=0
+declare -i get_script=0
 declare -i has_param=0
 declare -i index=0
 declare -i is_entity=0
@@ -75,6 +95,8 @@ function pd_login() {
 
    local __funcname=${FUNCNAME[0]}
 
+   local __tmpfile=$(mktemp --suffix=.txt ${__funcname}-XXXX)
+
 	if [[ $# -ne 4 ]]
 	then
 	  log "${__funcname}: expected 4 arguments, username, password, podium_url and return variable name" >&2
@@ -90,7 +112,7 @@ function pd_login() {
 
    cookiename="cookie-jar-${RANDOM}.txt"
 
-   cmd="${curlcmd} -s -c ${cookiename} --data 'j_username=$user&j_password=$pwd' '${podium_url}/${api_function}'"
+   cmd="curl --verbose --silent --show-error -c ${cookiename} --data 'j_username=$user&j_password=$pwd' '${podium_url}/${api_function}' > ${__tmpfile} 2>&1"
 
 	if (( verbose ))
 	then
@@ -103,12 +125,30 @@ function pd_login() {
 
 	if (( verbose ))
 	then
-      log "${__funcname}: cookiename = ${cookiename}"
+     log "${__funcname}: cookiename = ${cookiename}"
+     cat ${__tmpfile}
 	fi
+
+   login_err=$(grep -i 'error' ${__tmpfile} | wc -l)
+
+   if (( login_err > 0 ))
+   then
+     log "$__funcname: api call ${api_function}: login to QDC failed"
+     cat ${__tmpfile}
+     exit 1
+   else
+     rm ${__tmpfile}
+   fi
 
    if (( curlrc == 0 ))
    then
-	  eval $__resultvar="'$cookiename'"
+     if [[ -e ${cookiename} ]]
+     then
+       eval $__resultvar="'$cookiename'"
+     else
+       log "$__funcname: api call ${api_function}: failed cookie ${cookiename} not created"
+       exit 1
+     fi
    else
      log "$__funcname: api call ${api_function}: failed code: $curlrc"
      exit $curlrc
@@ -160,15 +200,19 @@ function pd_about() {
    __schema=$(json_extract_string "schemaVersion" "$__tmpfile")
 
    __expiry=$(json_extract_string "licenseInfo.expiryDateString" "$__tmpfile")
+   __pguri=$(json_extract_string "dataBaseProps.pstgrsDbUri" "$__tmpfile")
+   __dist=$(json_extract_string "distribProps.distributionUri" "$__tmpfile")
 
    printf "Version:   %s\n" $__version
    printf "Build:     %s\n" $__build
    printf "Schema:    %s\n" $__schema
    printf "Expiry:    %s\n" $__expiry
+   printf "PgUri:     %s\n" $__pguri
+   printf "Dist:      %s\n" $__dist
 
-   rm $__tmpfile
+   (( !verbose )) && rm $__tmpfile
 
-   eval $__resultvar="'$__version'"
+   exit 0
 }
 
 #######################################################################
@@ -268,7 +312,7 @@ function pd_exportentity() {
 
    if [[ $entity_id -ne 0 ]]
    then
-     __output_file_timestamp=$(gawk 'BEGIN {print strftime("%Y%m%dT%H%M%S", systime(),1)}')
+      __output_file_timestamp=$(date +"%Y%m%dT%H%M%S%Z")
      __output_file_name="entity_${sourcename}_${entityname}_${entity_id}_${__output_file_timestamp}.zip"
 
      if [[ -e ${__output_file_name} ]]
@@ -322,7 +366,7 @@ function pd_import() {
    local import_file_name="$4"
    local __resultvar=$5
 
-   local __tmpfile=$(mktemp --suffix=.json ${__funcname}.XXXX)
+   local __tmpfile=$(mktemp --suffix=.json ${import_file_name}-XXXX)
 
    if (( verbose ))
    then
@@ -366,13 +410,7 @@ function pd_import() {
       __overall_status="$($jq_exec '.[] | .overallStatus' ${__tmpfile})"
    fi
 
-   if [[ ${__overall_status} != "\"FINISHED\"" ]]
-   then
-      $jq_exec '.[] | .result' ${__tmpfile}
-   else 
-      $jq_exec '.[] | .result' ${__tmpfile}
-      rm $__tmpfile
-   fi
+   $jq_exec '.[] | .result' ${__tmpfile}
 
    eval $__resultvar="'$__overall_status'"
 
@@ -414,7 +452,7 @@ function pd_exportsource() {
 
    if [[ $source_id -ne 0 ]]
    then
-     __output_file_timestamp=$(gawk 'BEGIN {print strftime("%Y%m%dT%H%M%S", systime(),1)}')
+     __output_file_timestamp=$(date +"%Y%m%dT%H%M%S%Z")
      __output_file_name="source_${sourcename}_${source_id}_${__output_file_timestamp}.zip"
       cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${source_id}' --output ${__output_file_name}"
    else
@@ -471,7 +509,7 @@ function pd_exportdataflow() {
 
    if [[ $dataflow_id -ne 0 ]]
    then
-     __output_file_timestamp=$(gawk 'BEGIN {print strftime("%Y%m%dT%H%M%S", systime(),1)}')
+     __output_file_timestamp=$(date +"%Y%m%dT%H%M%S%Z")
      __output_file_name="dataflow_${workflowname}_${dataflow_id}_${__output_file_timestamp}.zip"
      cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflow_id}' --output ${__output_file_name}"
    else
@@ -494,6 +532,68 @@ function pd_exportdataflow() {
    assert "-e ${__output_file_name}" $LINENO
    
 	eval $__resultvar="'$__output_file_name'"
+}
+
+#######################################################################
+function pd_getscript() {
+
+    # Expected args
+    # 1 - cookiename
+    # 2 - podium url
+    # 3 - workflow name
+
+   local __funcname=${FUNCNAME[0]}
+
+   if [[ $# -ne 3 ]]
+   then
+     log "${__funcname}: expected 3 arguments, cookiename, podium_url, workflow name" >&2
+     exit 1
+   fi
+
+   local cookiename="$1"
+   local podium_url="$2"
+   local workflowname="$3"
+
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXXX)
+
+   if (( verbose ))
+   then
+     log "${__funcname}: cookiename: ${cookiename}, dataflow: ${workflowname}"
+   fi
+
+   local api_function="transformation/getBundleAndPigScript"
+
+   pd_getdataflowid ${cookiename} ${podium_url} ${workflowname} dataflow_id 
+
+   if [[ $dataflow_id -ne 0 ]]
+   then
+     cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflow_id}' --output ${__tmpfile}"
+   else
+     log "${__funcname}: dataflow: ${workflowname} - not found"
+     exit 1
+   fi
+
+   if (( verbose ))
+   then
+     log "${__funcname}: cmd = ${cmd}"
+   fi
+
+   eval ${cmd}
+
+   if (( verbose ))
+   then
+     json_dump "${__funcname}" "${__tmpfile}"
+   fi
+
+   s="$(${jq_exec} -r '.pig_script' ${__tmpfile})"
+
+   echo "${s@E}"
+
+   if (( ! verbose ))
+   then
+     rm ${__tmpfile}
+   fi
+
 }
 
 #######################################################################
@@ -549,7 +649,7 @@ function pd_getdataflowid() {
 
    # eval $(echo "$json" | gawk '{print gensub(".*\"objectId\":\"([[:digit:]]+)\".*", "__workflow_id=\\1;","g")}')
 
-   log "Dataflow: $workflowName, objectId: ${__dataflow_id}, __df_id_num: ${__df_id_num}"
+   log "Dataflow: $dataflowName, objectId: ${__dataflow_id}, __df_id_num: ${__df_id_num}"
 
    rm ${__tmpfile}
 
@@ -646,24 +746,31 @@ function pd_rptdataflowstatus() {
 	local podium_url="$2"
 	local dataflowId="$3"
 	local rptcount=$4
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXX)
 
 	local api_function="transformation/v1/loadAllWorkOrders/"
 
-	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+	cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC' --output ${__tmpfile}"
     
 	if (( verbose ))
 	then
 	  log "${__funcname}: cmd = ${cmd}"
 	fi
 
-	json=$(eval ${cmd})
+	eval ${cmd}
 	
 	if (( verbose ))
 	then
-	  log "${__funcname}: ${json}"
+     json_dump "${__funcname}" "${__tmpfile}"
 	fi
-	
-	echo "$json" | grep -oP '{"id":.*?}'  |  gawk -v hdr="y" -f pd_sh_wf.gawk
+
+   # $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))) ] | @csv' ${__tmpfile}
+   $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, .startTime, .endTime ] | @csv' ${__tmpfile}
+
+   if (( !verbose ))
+   then
+     rm ${__tmpfile}
+   fi
 
 }
 
@@ -679,27 +786,13 @@ function pd_rptentitystatus() {
    # Reports Podium entity status and recordCount
 
    local __funcname=${FUNCNAME[0]}
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXX)
 
    if (( $# != 5 ))
    then
      log "${__funcname}: expected 5 arguments, cookiename, podium_url, entity_id, rpt_count, long_rpt"
      exit 1
    fi
-
-   local __wo_id
-   local __source_id
-   local __source_name
-   local __entitiy_id
-   local __status
-   local __entity_name
-   local __start_time
-   local __end_time
-   local __load_time
-   local __records
-   local __good
-   local __bad
-   local __filtered
-   local __info_msg
 
    local cookiename="$1"
    local podium_url="$2"
@@ -709,78 +802,26 @@ function pd_rptentitystatus() {
 
    local api_function="entity/v1/loadLogs/"
 
-   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC' --output ${__tmpfile}"
 
    if (( verbose ))
    then
      log "${__funcname}: cmd = ${cmd}"
    fi
 
-   json=$(eval ${cmd})
+   eval ${cmd}
 
    if (( verbose ))
    then
-     json_dump "${__funcname}" "'${json}'"
+     json_dump "${__funcname}" "${__tmpfile}"
    fi
 
-# 2018-06-16 start
-   __full_list_size=$(json_extract_integer "fullListSize" "'${json}'")
+   $jq_exec --raw-output '.subList[] | [.sourceName, .entityName, .status, .recordCount, .goodRecordCount, .badRecordCount, .uglyRecordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), .deliveryId ] | @csv' ${__tmpfile}
 
-   if [[ "${json_parse}" == "native" ]]
+   if (( !verbose ))
    then
-
-     eval $(json_parse_list '{"id":\d+,.*?"workorderProp":\[.*?\]}' "$json")
-
-     if (( verbose ))
-     then
-       log "${__funcname}: ${#json_list[@]} entries on entity list fullListSize is ${__full_list_size}"
-     fi
-
-     # Scan the list for the entity name
-     for i in ${!json_list[@]}
-     do
-       j="${json_list[$i]}"
-
-       __wo_id=$(json_extract_integer "id" "'${j}'")
-       __source_id=$(json_extract_integer "sourceId" "'${j}'")
-       __source_name=$(json_extract_string "sourceName" "'${j}'")
-       __entity_id=$(json_extract_integer "entityId" "'${j}'")
-       __entity_name=$(json_extract_string "entityName" "'${j}'")
-       __status=$(json_extract_string "status" "'${j}'")
-
-       __start_time=$(json_extract_integer "startTime" "'${j}'")
-       __start_time=$(conv_epoch $__start_time)
-
-       __end_time=$(json_extract_integer "endTime" "'${j}'")
-       __end_time=$(conv_epoch $__end_time)
-
-       __load_time=$(json_extract_integer "loadTime" "'${j}'")
-       __load_time=$(conv_epoch $__load_time)
-
-       __records=$(json_extract_integer "recordCount" "'${j}'")
-       __good=$(json_extract_integer "goodRecordCount" "'${j}'")
-       __bad=$(json_extract_integer "badRecordCount" "'${j}'")
-       __ugly=$(json_extract_integer "uglyRecordCount" "'${j}'")
-
-       printf "%d,%d,\"%s\",%d,\"%s\",\"%s\",%s,%s,%s,%d,%d,%d,%d,%d\n" "${__wo_id}" "${__source_id}" "${__source_name}" "${__entity_id}" "${__entity_name}" "${__status}" "${__start_time}" "${__end_time}" "${__load_time}" "${__records}" "${__good}" "${__bad}" "${__ugly}"
-
-       if (( __long_report ))
-       then
-         __info_msg==$(json_extract_string "infoMessage" "'${j}'")
-         format_info_message "${__info_msg}"
-       fi
-
-     done
-   else
-     echo "$json" | ./jq-win64.exe --compact-output '.subList[] | [.sourceName, .entityName, .status, .recordCount, .goodRecordCount] | @csv' 
+      rm ${__tmpfile}
    fi
-
-
-
-# 2018-06-16 end
-
-   # echo "$json" | grep -oP '{"id":.*?"workorderProp":\[.*?]}' | grep -oP '{"id":.*?"workorderProp":' | gawk -v hdr="y" -f pd_sh_entity.gawk
-   # echo "$json" | grep -oP '{"id":.*?}' |  gawk -v hdr="y" -f pd_sh_entity.gawk
 
 }
 
@@ -810,43 +851,47 @@ function pd_dataloadcleanup() {
    local rptcount=500
 
    local api_function="entity/v1/loadLogs/"
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXX)
+   local __tmpfile_cleanup=$(mktemp --suffix=.json ${__funcname}_cleanup-XXX)
 
-   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${entityId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC' --output ${__tmpfile}"
 
    if (( verbose ))
    then
      log "${__funcname}: cmd = ${cmd}"
    fi
 
-   json=$(eval ${cmd})
+   eval ${cmd}
 
    if (( verbose ))
    then
-     json_dump "${__funcname}" "'${json}'"
+     json_dump "${__funcname}" "${__tmpfile}"
    fi
 
-   if [[ "${json_parse}" == "native" ]]
-   then
-     workorderids=$(echo "$json" | grep -oP '{"id":.*?"workorderProp":\[.*?]}' | grep -oP '{"id":.*?"workorderProp":' | gawk -f pd_sh_entity.gawk | cut -d, -f 1,6 | gawk -F , '/FINISHED/ {print $1}' | gawk -v L=${keepcount} 'NR > L {print $1}')
-   else
-      workorderids=$(echo "$json" | ${jq_exec}  --argjson keep ${keepcount} '.subList[$keep:] | .[] | select(.status=="FINISHED") | .id')
-   fi
+   # Construct a commas separated list of workorder ids, the keepcount most recent are excluded
+   workorderids=$(${jq_exec} --argjson keep ${keepcount} '[ .subList[] | select(.status=="FINISHED") | {id: .id} ] | .[$keep:] | .[].id' ${__tmpfile})
 
    if (( verbose ))
    then
      log "Workorder id list is : $workorderids"
    fi
 
-   local api_function="entity/deleteDataForLoadLogs/15"
-   #local api_function="entity/v1/dataLoadCleanUp/15"
+   #local api_function="entity/deleteDataForLoadLogs/15"
+   local api_function="entity/v1/dataLoadCleanUp/15"
 
-   for i in $(echo $workorderids | tr ' ' '\n' | sort -n)
+   for i in $workorderids
    do
-     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
-     log $cmd
-     json=$(eval ${cmd})
-     log "pd_dataloadcleanup: ${json}"
+     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}' --output ${__tmpfile_cleanup}"
+     log "$cmd"
+     eval ${cmd}
+     ${jq_exec} --color-output '.' "${__tmpfile_cleanup}"
    done
+
+   if (( !verbose ))
+   then
+      rm ${__tmpfile}
+      rm ${__tmpfile_cleanup}
+   fi
 
 }
 
@@ -876,37 +921,41 @@ function pd_deleteexelogdata() {
    local rptcount=500
 
    local api_function="transformation/v1/loadAllWorkOrders/"
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXX)
+   local __tmpfile_cleanup=$(mktemp --suffix=.json ${__funcname}_cleanup-XXX)
 
-   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC'"
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${dataflowId}?count=${rptcount}&sortAttr=loadTime&sortDir=DESC' --output ${__tmpfile}"
 
    if (( verbose ))
    then
      log "${__funcname}: cmd = ${cmd}"
    fi
 
-   json=$(eval ${cmd})
+   eval ${cmd}
 
    if (( verbose ))
    then
-     json_dump "${__funcname}" "'${json}'"
+     json_dump "${__funcname}" "${__tmpfile}"
    fi
 
-   if [[ "${json_parse}" == "native" ]]
-   then
-     workorderids=$(echo "$json" | grep -oP '{"id":.*?}'  |  gawk -v hdr="n" -f pd_sh_wf.gawk  | cut -d, -f1 | gawk -v L=${keepcount} 'NR > L {print}')
-   else
-     workorderids=$(echo "$json" | ${jq_exec} --argjson keep ${keepcount} '[ .subList[] | select(.status=="FINISHED") | {id: .id} ] | .[$keep:] | .[].id')
-   fi
+   workorderids=$(${jq_exec} --argjson keep ${keepcount} '[ .subList[] | select(.status=="FINISHED") | {id: .id} ] | .[$keep:] | .[].id' ${__tmpfile})
 
    local api_function="transformation/deleteExeLogData/13"
 
    for i in $workorderids
    do
-     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}'"
+     log "Deleting workorder $i"
+     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${i}' --output ${__tmpfile_cleanup}"
      log $cmd
-     json=$(eval ${cmd})
-     json_dump "${__funcname}" "'${json}'"
+     eval ${cmd}
+     ${jq_exec} --color-output '.' "${__tmpfile_cleanup}"
    done
+
+   if (( !verbose ))
+   then
+      rm ${__tmpfile}
+      rm ${__tmpfile_cleanup}
+   fi
 
 }
 
@@ -1021,13 +1070,13 @@ function pd_executeworkflow() {
      # Podium 3.2, check documentation
      local api_function="transformation/v1/executeDataFlow"
 
-     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}'  -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{}' --compressed"
+     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}?bValidate=true'  -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{}' --compressed"
      log "${__funcname}: cmd = ${cmd}"
 
    else
 
      local api_function="transformation/v1/executeWithParmas"
-     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '${params}' --compressed"
+     cmd="${curlcmd} -s -b ${cookiename} -X PUT '${podium_url}/${api_function}/${workflowId}/${engine}?bValidate=true' -H 'Content-Type: application/json;charset=UTF-8' --data-binary '${params}' --compressed"
      log "${__funcname}: cmd = ${cmd}"
 
    fi
@@ -1139,10 +1188,12 @@ function pd_checkentity() {
    local -i __ret_entity_id=0
    local -i __full_list_size=0
 
+   local __encoded_entityname=$(urlencode "$entityname")
+
    entityname=$(echo $entityname | tr [:upper:] [:lower:])
 
    # cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/${sourceid}/30/${entityname}'"
-   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/2/${entityname}?objType=EXTERNAL&sourceIds=$sourceid' --output ${__tmpfile}"
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}/2/${__encoded_entityname}?objType=EXTERNAL&sourceIds=$sourceid' --output ${__tmpfile}"
 
    if (( verbose ))
    then
@@ -1191,10 +1242,11 @@ function pd_checkentity() {
 
    if (( verbose ))
    then
-      log "Returning ${__entity_id} for entity_id,  source is: ${sourceid}, entity name : ${entityname}"
+     log "Returning ${__entity_id} for entity_id,  source is: ${sourceid}, entity name : ${entityname}"
+   else
+     rm ${__tmpfile}
    fi
 
-   rm ${__tmpfile}
 
    eval $__resultvar="'${__entity_id}'"
 
@@ -1249,61 +1301,50 @@ function pd_getsources() {
     # Expected args
     # 1 - cookiename
     # 2 - podium url
-    # 3 - result variable name
+    # 3 - source pattern
 
-    # returns array, index is source id, value is source name
+    # Lists source names that match pattern
 
 	local __funcname=${FUNCNAME[0]}
 
 	if [[ $# -ne 3 ]]
 	then
-	  log "${__funcname}: expected 3 arguments, cookiename, podium_url, return variable name" 
+	  log "${__funcname}: expected 3 arguments, cookiename, podium_url, pattern" 
 	  exit 1
 	fi
 
    local cookiename="$1"
 	local podium_url="$2"
-	local __resultvar=$3
+	local pattern=$3
 
 	local api_function="source/v1/getSources"
+   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXXX)
 
-    cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}'"
+   cmd="${curlcmd} -s -b ${cookiename} -X GET '${podium_url}/${api_function}' --output ${__tmpfile}"
 
 	if (( verbose ))
 	then
 	  log "${__funcname}: cmd = ${cmd}"
 	fi
 
-	json=$(eval ${cmd})
+	eval ${cmd}
 	
 	if (( verbose ))
-    then
-	  log $json
+   then
+     json_dump "${__funcname}" "${__tmpfile}"
 	fi
 
-   # Create json_list array
-   # eval $(json_parse_list '{"id":\d+.?"name".*?}}' "$json")
-   eval $(json_parse_list '{"id":\d+.*?.*?"name".*?}' "$json")
+   if [[ ${#pattern} > 0 ]]
+   then
+     ${jq_exec} --raw-output ".subList[] | select(.name|test(\"${pattern}\";\"i\")) | [.id, .name, .sourceType, .commProtocol, .externalData.SourceDataBaseTypeName] | @csv" ${__tmpfile}
+   else
+     ${jq_exec} --raw-output '.subList[] | [.id, .name, .sourceType, .commProtocol, .externalData.SourceDataBaseTypeName] | @csv' ${__tmpfile}
+   fi
 
-	if (( verbose ))
-    then
-      log "${__funcname}: ${#json_list[@]} entries on source list"
+	if (( !verbose ))
+   then
+     rm ${__tmpfile}
 	fi
-
-    #
-    # returning an array where the index is the src id and the
-    # value is the src name
-   for i in ${!json_list[@]}
-	do
-     j="${json_list[$i]}"
-     __source_name=$(json_extract_string "name" "'${j}'")
-     __source_id=$(json_extract_integer "id" "'${j}'")
-	  if (( verbose ))
-	  then
-	    printf "Source id: %d, name: %s\n" "${__source_id}" "${__source_name}"
-	  fi
-	  eval $__resultvar[$__source_id]="'${__source_name}'"
-	done
 
 }
 
@@ -1546,7 +1587,7 @@ function pd_getentityproperty() {
    local entityid="$3"
    local propertyname="$4"
    local __returnvar=$5
-   local __tmpfile=$(mktemp --suffix=.json ${__funcname}-XXXX)
+   local __tmpfile=$(mktemp --suffix=.txt ${__funcname}-XXXX)
 
    local __property_value=""
 
@@ -1561,17 +1602,13 @@ function pd_getentityproperty() {
 
    eval ${cmd}
 
-   if (( verbose ))
-   then
-     json_log "${__funcname}" ${__tmpfile}
-   fi
- 
-   ## To-do - fix this
-   eval "__property_value=${json}"
+   __property_value=$(< ${__tmpfile})
 
    if (( verbose ))
    then
      log "${__funcname}: return - nid: ${entityid}, property: ${propertyname} value: ${__property_value}"
+   else
+     rm ${__tmpfile}
    fi
 
    eval $__returnvar="'$__property_value'"
@@ -1731,9 +1768,9 @@ function pd_schedule() {
 
 pd_logout() {
 
-    # Expected args
-    # 1 - cookename
-    # 2 - podium url
+   # Expected args
+   # 1 - cookename
+   # 2 - podium url
 
    local cookiename="$1"
    local podium_url="$2"
@@ -1741,11 +1778,11 @@ pd_logout() {
    local api_function="j_spring_security_logout"
 
    curl -s -b ${cookiename} "${podium_url}"'/'"${api_function}"
-   curl -j -b ${cookiename} "${podium_url}"
+   curl -s -j -b ${cookiename} "${podium_url}"
 }
 
 
-usage() { 
+usage() {
 
 cat <<EOF
 
@@ -1771,7 +1808,7 @@ if [[ $# -eq 0 ]]; then
    exit 1
 fi
 
-while getopts ":ixhavrklfc:e:w:j:s:mn:y:p:t:z:" opt
+while getopts ":ixghavrklfc:e:w:j:s:mn:y:p:t:z:" opt
 do
    case $opt in
    a  ) about=1
@@ -1798,6 +1835,8 @@ do
    x  ) is_export=1
         ;;
    i  ) is_import=1
+        ;;
+   g  ) get_script=1
         ;;
    z  ) import_file_name=$OPTARG
         ;;
@@ -1879,7 +1918,13 @@ if (( verbose ))
 then
   curlcmd="curl --verbose"
 else
-  curlcmd="curl --silent"
+  curlcmd="curl --silent --show-error"
+fi
+
+if (( is_klean && rpt_count < 0 ))
+then
+   log "The count on an ingest or dataflow clean must be >= 0"
+   exit 1
 fi
 
 # #######################
@@ -1900,9 +1945,9 @@ pd_getversion ${cookiename} ${podium_url} podium_version
 # #######################
 
 # Must specify operation
-if (( (is_source + is_entity + is_workflow + is_export + is_import + is_job) == 0))
+if (( (is_source + is_entity + is_workflow + is_export + is_import + is_job + get_script) == 0))
 then
-  log "Need one of -s, -e, -w, -i, -x or -j options" >&2
+  log "Need one of -s, -e, -w, -i, -xi, -g or -j options" >&2
   exit 1
 fi
 
@@ -1939,18 +1984,10 @@ then
       log "Source name pattern, pat = ${pat}"
     fi
 
-    pd_getsources ${cookiename} ${podium_url} output_source_list
+    pd_getsources ${cookiename} ${podium_url} ${pat}
 
-    for s in ${!output_source_list[@]}
-    do
-      sname=${output_source_list[$s]}
+    exit 0
 
-      if [[ $sname =~ ${pat} ]]
-      then
-        printf "Id: %5d, Name: %s\n" $s ${sname}
-      fi
-      done
-      exit 0
    fi
 
    pd_getsourceid  ${cookiename} ${podium_url} ${podium_source} source_id
@@ -2106,6 +2143,27 @@ then
 
    exit
 
+fi
+
+# ################################
+# Get dataflow script
+# ################################
+
+if (( get_script ))
+then
+
+  # Validate that an object type given
+  if (( ! is_workflow ))
+  then
+    log "Dataflow name must be specified with get script"
+    exit 1
+  else
+    for w in ${run_que[*]}
+    do
+      pd_getscript ${cookiename} ${podium_url} ${w}
+    done
+    exit 0
+  fi
 
 fi
 
@@ -2256,7 +2314,7 @@ do
 
            log "Entity: ${object_name} is a entity.base.type of: ${base_type}"
 
-           if [[ ${base_type} == "Snapshot" ]]
+           if [[ ${base_type} == "\"Snapshot\"" ]]
            then
              pd_dataloadcleanup ${cookiename} ${podium_url} ${entity_id} $rpt_count
              job_id=0
