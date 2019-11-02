@@ -70,7 +70,7 @@ A typical `pd_shell` config file may be something like:
 podium:
   user:    "youruser"
   pw:      "yourpwd" 
-  url:     "http://yoururl:9080/QDC"
+  url:     "http://yoururl:9080/podium"
 
 default:
   max_jobs: 4
