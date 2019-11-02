@@ -254,7 +254,11 @@ id,name,status,starttime,endtime,loadtime,recordcount
 
 ### Export (-x)
 
-Export will create a zip file with the name:
+The `pd_shell` export / import can be used for producing backups or
+promoting objects between QDC environments. Even driving promotion
+through venerable old makefiles!
+
+Export will create an export zip file with the name:
 
 For a source:
 
@@ -280,7 +284,6 @@ e.g.
 2019-11-02 13:07:03 - Entity xxx_pr.address_type_t exported to file entity_xxx_pr_address_type_t_1_20191102T130659GMTST.zip
 ```
 
-
 For a dataflow:
 
 ```
@@ -293,21 +296,21 @@ e.g.
 2019-11-02 13:07:36 - Dataflow prod_stg_gcs_member_staging_t exported to file dataflow_prod_stg_gcs_member_staging_t_8849_20191102T130731GMTST.zip
 ```
 
-#### Export a complete Source
+#### Example - Export a complete Source
 
 ```
 :~ ./pd_shell.sh -y pd_dev.yml -x -s XXX_SRC
 
 ```
 
-#### Export a Source / Entity
+#### Example - Export a Source / Entity
 
 ```
 :~ ./pd_shell.sh -y pd_dev.yml -x -s XXX_SRC -e activity_type_t
 
 ```
 
-#### Export a Dataflow
+#### Example - Export a Dataflow
 
 ```
 ./pd_shell.sh -y pd_dev.yml -x -w dataflowname
@@ -393,7 +396,8 @@ e.g.
 #### View a dataflow Pig Script (-g -w)
 
 To view the dataflow Pig script that would be submitted by QDC use the
--g -w options
+-g -w options. This can be useful for taking QDC generated snippets and
+testing them in Pig grunt.
 
 ```
 ./pd_shell.sh -y pd_dev.yml -g -w dataflowname
@@ -440,7 +444,7 @@ QDC keeps every version of data for a data load or workflow execution.
 This can lead to a rapid consumption of space in the Hadoop file system.
 
 `pd_shell` through the use of the -k option will trim the number of
-versions being retained.
+versions being retained. 
 
 #### Clean Data Load History
 
@@ -451,6 +455,8 @@ versions being retained.
 Will delete load logs, profile data, HDFS contents and Hive partitions
 for the named Source / Entity, retaining the last 5 most recent FINISHED
 data loads.
+
+Note: FAILED loads are _not_ deleted.
 
 Note: This will only work against snapshots not incremental data loads.
 
