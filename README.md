@@ -122,7 +122,8 @@ Table: jq Config
 | Parameter | Description                               |
 | --------- | ----------------------------------------- |
 | exec      | Location of the `jq` executable        |
-| style     | `jq` style used when `jq` dumps JSON   |
+| style     | `jq` style used when `jq` dumps JSON,  |
+|           | see the `jq` documentation for details |
 
 ## Examples
 
