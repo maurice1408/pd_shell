@@ -1921,7 +1921,7 @@ else
   curlcmd="curl --silent --show-error"
 fi
 
-if (( is_klean && rpt_count < 0 ))
+if (( is_klean && rpt_count < 1 ))
 then
    log "The count on an ingest or dataflow clean must be >= 0"
    exit 1
