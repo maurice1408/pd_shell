@@ -764,8 +764,8 @@ function pd_rptdataflowstatus() {
      json_dump "${__funcname}" "${__tmpfile}"
 	fi
 
-   # $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))) ] | @csv' ${__tmpfile}
-   $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, .startTime, .endTime ] | @csv' ${__tmpfile}
+   $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), if (.endTime | length) > 0 then (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))) else "" end ] | @csv' ${__tmpfile}
+   # $jq_exec --raw-output '.subList[] | [.name, .status, .recordCount, .startTime, .endTime ] | @csv' ${__tmpfile}
 
    if (( !verbose ))
    then
@@ -816,7 +816,7 @@ function pd_rptentitystatus() {
      json_dump "${__funcname}" "${__tmpfile}"
    fi
 
-   $jq_exec --raw-output '.subList[] | [.sourceName, .entityName, .status, .recordCount, .goodRecordCount, .badRecordCount, .uglyRecordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), .deliveryId ] | @csv' ${__tmpfile}
+   $jq_exec --raw-output '.subList[] | [.sourceName, .entityName, .status, .recordCount, .goodRecordCount, .badRecordCount, .uglyRecordCount, (.startTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))), if (.endTime | length) > 0 then (.endTime | ( ./1000 | strftime("%Y-%m-%d %H:%M:%S"))) else "" end, .deliveryId ] | @csv' ${__tmpfile}
 
    if (( !verbose ))
    then
