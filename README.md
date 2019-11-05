@@ -348,6 +348,9 @@ e.g.
 
 ```
 [13:21:21 pd_shell] ./pd_shell.sh -y pd_aws_qar.yml -i -w dataflow_prod_stg_gcs_member_staging_t_8849_20191102T130731GMTST.zip
+```
+
+```json
 {
   "GWR_PR.stg_gcs_employee_address_t": {
     "objectType": "",
@@ -392,6 +395,9 @@ e.g.
     "status": "SUCCEEDED"
   }
 }
+```
+
+```bash
 2019-11-02 13:22:15 - Import status: dataflow_prod_stg_gcs_member_staging_t_8849_20191102T130731GMTST.zip - "FINISHED"
 ```
 
