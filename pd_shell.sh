@@ -587,7 +587,7 @@ function pd_getscript() {
 
    s="$(${jq_exec} -r '.pig_script' ${__tmpfile})"
 
-   echo "${s@E}"
+   echo -e "${s}"
 
    if (( ! verbose ))
    then
