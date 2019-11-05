@@ -416,6 +416,9 @@ e.g.
 ```
 [13:29:37 pd_shell] ./pd_shell.sh -y pd_dev.yml -g -w je70_test_df
 2019-11-02 13:30:03 - Dataflow: je70_test_df, objectId: 9207, __df_id_num: 9207
+```
+
+```pig
 
 -- podium data script generator prologue
 -- begin script for com.nvs.core.model.prepare.pkg.Loader (id:9209)
