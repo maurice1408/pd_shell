@@ -11,7 +11,7 @@
 * Export / Import QDC objects
 * Clean (delete) ingest and dataflow execution logs.
 
-`pd_shell` uses the QDC REST API to communicate with your QDC system.
+`pd_shell` uses the QDC REST API to interact with your QDC system.
 
 All API calls are via cURL the QDC Java based command line utility (CLU)
 is not used.
@@ -319,7 +319,7 @@ e.g.
 ```
 
 
-### Import (-x)
+### Import (-i)
 
 Import a source, source/entity, dataflow using the `-i` option,
 
