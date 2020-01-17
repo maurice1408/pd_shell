@@ -22,6 +22,9 @@ documented in this README in the form of examples. Some
 features of `pd_shell` e.g. execute a publish job, will be
 documented in the next commit.
 
+Note: You can also read this document at [GitHub
+Pages](https://maurice1408.github.io/pd_shell/)
+
 ## Installation
 
 Clone this github repository and copy the files to a suitable directory
