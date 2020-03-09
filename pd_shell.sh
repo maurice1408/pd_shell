@@ -2333,35 +2333,41 @@ do
 
        workflow_name=$object_name
 
-       pd_getdataflowid ${cookiename} ${podium_url} ${workflow_name} workflow_id
-
-       if [[ $workflow_id -eq 0 ]]
-       then 
-         log "Workflow: ${workflow_name}, not found"
-         let "index = $index + 1"
-         continue
+       if [[ $is_long_report -eq 1 ]]
+       then
+         pd_listdataflows ${cookiename} ${podium_url} ${workflow_name}
+         job_id=0
        else
-         if [[ $is_report -eq 1 ]]
-         then
-           pd_rptdataflowstatus ${cookiename} ${podium_url} ${workflow_id} $rpt_count
-           job_id=0
-         elif [[ $is_klean -eq 1 ]]
-         then
-           pd_deleteexelogdata ${cookiename} ${podium_url} ${workflow_id} $rpt_count
-           job_id=0
-         else
-           log "Starting workflow: ${workflow_name}"
-           log "Workflow: ${workflow_name}, found id=${workflow_id}"
 
-           if [[ $has_param -eq 1 ]]
-           then
-             log "Parameters: ${params}"
-           fi
+          pd_getdataflowid ${cookiename} ${podium_url} ${workflow_name} workflow_id
 
-           pd_executeworkflow ${cookiename} ${podium_url} ${workflow_id} ${has_param} ${engine} workorder_id
-           job_id=${workflow_id}
-         fi
+          if [[ $workflow_id -eq 0 ]]
+          then 
+            log "Workflow: ${workflow_name}, not found"
+            let "index = $index + 1"
+            continue
+          else
+            if [[ $is_report -eq 1 ]]
+            then
+              pd_rptdataflowstatus ${cookiename} ${podium_url} ${workflow_id} $rpt_count
+              job_id=0
+            elif [[ $is_klean -eq 1 ]]
+            then
+              pd_deleteexelogdata ${cookiename} ${podium_url} ${workflow_id} $rpt_count
+              job_id=0
+            else
+              log "Starting workflow: ${workflow_name}"
+              log "Workflow: ${workflow_name}, found id=${workflow_id}"
 
+              if [[ $has_param -eq 1 ]]
+              then
+                log "Parameters: ${params}"
+              fi
+
+              pd_executeworkflow ${cookiename} ${podium_url} ${workflow_id} ${has_param} ${engine} workorder_id
+              job_id=${workflow_id}
+            fi
+          fi
        fi
      fi
 

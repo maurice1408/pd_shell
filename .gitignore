@@ -2,4 +2,6 @@
 *.*~
 cookie*
 *.log
-*gitignore*
+*.json
+*.zip
+*.txt

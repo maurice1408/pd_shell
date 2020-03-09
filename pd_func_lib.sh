@@ -280,8 +280,7 @@ function urlencode() {
         local c="${1:i:1}"
         case $c in
             [a-zA-Z0-9.~_-]) printf "$c" ;;
-            *) printf '%s' "$c" | xxd -p -c1 |
-                   while read c; do printf '%%%s' "$c"; done ;;
+            *) printf '%s' "$c" | od -A n -t x -N 1 | gawk -- '{printf "%s\n", substr($0,8,2)}' | while read c; do printf '%%%s' "$c"; done ;;
         esac
     done
 }
